@@ -2,7 +2,7 @@
 <html lang="en" dir="ltr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Lumen — Photo Gallery</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
@@ -10,172 +10,45 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+<link rel="stylesheet" href="./assets/style/main.css">
 <script>
   tailwind.config = {
     theme: { extend: { fontFamily: { sans: ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } }
   }
 </script>
 
-<style>
-  :root { --ink: #0f172a; --accent: #6366f1; }
-  html { scroll-behavior: smooth; }
-  body { background: #f7f7fa; color: var(--ink); min-height: 100vh; }
 
-  /* Colour behind the glass so the blur has something to refract */
-  .blob { position: fixed; border-radius: 9999px; filter: blur(90px); z-index: 0; pointer-events: none; opacity: .7; }
-  .b1 { width: 520px; height: 520px; background: #ffd9c4; top: -160px; left: 8%; }
-  .b2 { width: 480px; height: 480px; background: #c4e4ff; top: 30%; right: -140px; }
-  .b3 { width: 460px; height: 460px; background: #e3d6ff; bottom: -160px; left: 22%; }
-
-  /* Liquid glass (light) — no shadows, edges come from a bevelled border */
-  .glass {
-    background: linear-gradient(135deg, rgba(255,255,255,.82), rgba(255,255,255,.46));
-    backdrop-filter: blur(26px) saturate(190%);
-    -webkit-backdrop-filter: blur(26px) saturate(190%);
-    border: 1px solid;
-    border-color: rgba(255,255,255,.95) rgba(148,163,184,.30) rgba(148,163,184,.30) rgba(255,255,255,.95);
-  }
-  .glass-photo {
-    background: linear-gradient(135deg, rgba(255,255,255,.30), rgba(255,255,255,.10));
-    backdrop-filter: blur(18px) saturate(170%);
-    -webkit-backdrop-filter: blur(18px) saturate(170%);
-    border: 1px solid rgba(255,255,255,.5);
-    color: #fff;
-  }
-
-  .tap { transition: transform .18s ease, background .2s ease, color .2s ease, border-color .2s ease; }
-  .tap:hover { transform: translateY(-1px); }
-  .tap:active { transform: scale(.95); }
-
-  .search-wrap { transition: border-color .2s ease, outline-color .2s ease; outline: 2px solid transparent; }
-  .search-wrap:focus-within { outline-color: rgba(99,102,241,.35); border-color: rgba(99,102,241,.6); }
-
-  .tab { color: #64748b; border-bottom: 2px solid transparent; }
-  .tab:hover { color: var(--ink); }
-  .tab.active { color: var(--ink); background: #fff; border-bottom-color: var(--ink); }
-
-  .seg { color: #475569; }
-  .seg.active { background: var(--ink); color: #fff; }
-
-  .rail { color: #475569; }
-  .rail.active { background: var(--ink); color: #fff; }
-
-  .sw { width: 30px; height: 30px; border-radius: 9999px; border: 1px solid rgba(15,23,42,.15); transition: transform .15s ease; }
-  .sw:hover { transform: scale(1.1); }
-  .sw.sel { outline: 2px solid var(--ink); outline-offset: 2px; }
-
-  .chip { background: rgba(255,255,255,.75); border: 1px solid rgba(148,163,184,.3); }
-  .chip:hover { background: #fff; }
-
-  /* Masonry density */
-  #grid { column-gap: 1.25rem; column-count: 1; }
-  #grid[data-d="large"]   { column-count: 1; }
-  #grid[data-d="cozy"]    { column-count: 1; }
-  #grid[data-d="compact"] { column-count: 2; }
-  @media (min-width: 640px) {
-    #grid[data-d="large"]   { column-count: 2; }
-    #grid[data-d="cozy"]    { column-count: 2; }
-    #grid[data-d="compact"] { column-count: 3; }
-  }
-  @media (min-width: 1024px) {
-    #grid[data-d="large"]   { column-count: 2; }
-    #grid[data-d="cozy"]    { column-count: 3; }
-    #grid[data-d="compact"] { column-count: 5; }
-  }
-  @media (min-width: 1280px) {
-    #grid[data-d="large"]   { column-count: 3; }
-    #grid[data-d="cozy"]    { column-count: 4; }
-    #grid[data-d="compact"] { column-count: 6; }
-  }
-
-  /* Cards */
-  .card { transition: transform .4s cubic-bezier(.2,.8,.2,1); cursor: zoom-in; }
-  .card:hover { transform: translateY(-4px); }
-  .card > img.main { opacity: 0; transition: opacity .6s ease, transform .8s cubic-bezier(.2,.8,.2,1); }
-  .card > img.main.loaded { opacity: 1; }
-  .card:hover > img.main.loaded { transform: scale(1.05); }
-  .card .scrim { opacity: 0; transition: opacity .3s ease; background: linear-gradient(to top, rgba(15,23,42,.55), rgba(15,23,42,0) 55%); }
-  .card .chrome { opacity: 0; transform: translateY(8px); transition: opacity .3s ease, transform .3s ease; }
-  .card:hover .scrim, .card:focus-within .scrim { opacity: 1; }
-  .card:hover .chrome, .card:focus-within .chrome { opacity: 1; transform: none; }
-  @media (hover: none) { .card .scrim, .card .chrome { opacity: 1; transform: none; } }
-
-  .shimmer {
-    background: linear-gradient(100deg, rgba(255,255,255,.35) 30%, rgba(255,255,255,.85) 50%, rgba(255,255,255,.35) 70%), #e5e7ef;
-    background-size: 200% 100%;
-    animation: shimmer 1.5s linear infinite;
-  }
-  @keyframes shimmer { to { background-position: -200% 0; } }
-
-  .no-scrollbar::-webkit-scrollbar { display: none; }
-  .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-
-  .pop-in { animation: pop .3s cubic-bezier(.2,.8,.2,1); }
-  @keyframes pop { from { opacity: 0; transform: translateY(-8px) scale(.98); } }
-  .toast-in { animation: toast .35s cubic-bezier(.2,.8,.2,1); }
-  @keyframes toast { from { opacity: 0; transform: translate(-50%, 12px) scale(.96); } }
-
-  #lbImg { transition: transform .35s cubic-bezier(.2,.8,.2,1); cursor: zoom-in; }
-  #lbImg.zoomed { transform: scale(2); cursor: zoom-out; }
-
-  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-  @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation: none !important; transition: none !important; }
-  }
-</style>
 </head>
 
 <body class="font-sans antialiased">
   <div class="blob b1"></div><div class="blob b2"></div><div class="blob b3"></div>
 
-  <!-- Side rail (bottom bar on mobile) -->
-  <aside class="glass fixed z-40 rounded-[28px] p-2 flex gap-2
-                bottom-4 left-1/2 -translate-x-1/2 flex-row
-                md:bottom-auto md:left-4 md:top-4 md:translate-x-0 md:h-[calc(100vh-2rem)] md:w-[72px] md:flex-col md:items-center md:py-4">
-    <div class="hidden md:flex w-11 h-11 rounded-2xl bg-slate-900 text-white items-center justify-center mb-2">
+  <aside class="glass fixed z-40 rounded-[28px] p-2 flex flex-row gap-2 items-center justify-around md:justify-start overflow-x-auto no-scrollbar
+                bottom-3 inset-x-3
+                md:top-4 md:bottom-4 md:left-4 md:inset-x-auto md:w-[72px] md:flex-col md:py-4 md:overflow-x-visible md:overflow-y-auto">
+    <div class="hidden md:flex shrink-0 w-11 h-11 rounded-3xl bg-slate-900 text-white items-center justify-center mb-1">
       <i class="fa-solid fa-camera-retro"></i>
     </div>
-    <button data-nav="explore" class="rail tap w-12 h-12 rounded-2xl flex items-center justify-center" title="Explore" aria-label="Explore"><i class="fa-solid fa-compass text-lg"></i></button>
-    <button data-nav="latest" class="rail tap w-12 h-12 rounded-2xl flex items-center justify-center" title="Latest" aria-label="Latest"><i class="fa-solid fa-clock-rotate-left text-lg"></i></button>
-    <button data-nav="surprise" class="rail tap w-12 h-12 rounded-2xl flex items-center justify-center" title="Surprise me" aria-label="Surprise me"><i class="fa-solid fa-shuffle text-lg"></i></button>
-    <button data-nav="favorites" class="rail tap relative w-12 h-12 rounded-2xl flex items-center justify-center" title="Favorites" aria-label="Favorites">
+
+    <button id="railSearch" class="md:hidden tap shrink-0 w-12 h-12 rounded-3xl bg-slate-900 text-white flex items-center justify-center" title="Search" aria-label="Open search"><i class="fa-solid fa-magnifying-glass text-lg"></i></button>
+
+    <button data-nav="latest" class="rail tap shrink-0 w-12 h-12 rounded-3xl flex items-center justify-center" title="Latest" aria-label="Latest"><i class="fa-solid fa-clock-rotate-left text-lg"></i></button>
+    <button data-nav="surprise" class="rail tap shrink-0 w-12 h-12 rounded-3xl flex items-center justify-center" title="Surprise me" aria-label="Surprise me"><i class="fa-solid fa-shuffle text-lg"></i></button>
+    <button data-nav="favorites" class="rail tap relative shrink-0 w-12 h-12 rounded-3xl flex items-center justify-center" title="Favorites" aria-label="Favorites">
       <i class="fa-solid fa-heart text-lg"></i>
       <span id="favBadge" class="hidden absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[11px] font-bold items-center justify-center">0</span>
     </button>
-    <div class="md:flex-1"></div>
-    <button id="toTop" class="rail tap w-12 h-12 rounded-2xl flex items-center justify-center" title="Back to top" aria-label="Back to top"><i class="fa-solid fa-arrow-up text-lg"></i></button>
+
+    <div class="shrink-0 w-px h-8 md:w-8 md:h-px bg-slate-300/70"></div>
+
+    <div id="tabs" class="contents"></div>
+
+    <div class="hidden md:block shrink-0 w-px h-8 md:w-8 md:h-px bg-slate-300/70"></div>
+    <button id="toTop" class="rail tap hidden md:flex shrink-0 w-12 h-12 rounded-3xl flex items-center justify-center" title="Back to top" aria-label="Back to top"><i class="fa-solid fa-arrow-up text-lg"></i></button>
   </aside>
 
   <div class="relative z-10 md:pl-[104px]">
-
-    <!-- Top bar -->
-    <header class="sticky top-0 z-30 px-4 pt-4 md:pr-4">
-      <div class="glass rounded-[28px] p-3 space-y-3">
-
-        <div class="relative">
-          <form id="searchForm" role="search" class="search-wrap glass rounded-full flex items-center gap-3 pl-5 pr-2 py-1.5">
-            <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
-            <label class="flex-1">
-              <span class="sr-only">Search photos</span>
-              <input id="searchInput" type="text" autocomplete="off" placeholder="Search free photos  ( press / )"
-                class="w-full bg-transparent py-2.5 text-[15px] font-medium placeholder-slate-400 focus:outline-none">
-            </label>
-            <button type="button" id="clearBtn" class="hidden w-9 h-9 rounded-full text-slate-400 hover:text-slate-900 tap" aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button>
-            <button type="submit" class="tap bg-slate-900 text-white rounded-full px-5 h-11 text-sm font-semibold">Search</button>
-          </form>
-
-          <!-- Recent + trending -->
-          <div id="suggest" class="hidden pop-in glass absolute left-0 right-0 top-full mt-2 rounded-3xl p-4 z-40" onmousedown="event.preventDefault()"></div>
-        </div>
-
-        <nav aria-label="Categories">
-          <div id="tabs" class="flex items-center gap-1.5 overflow-x-auto no-scrollbar"></div>
-        </nav>
-      </div>
-    </header>
-
-    <main class="px-4 md:pr-4 pt-8 pb-32 md:pb-16">
+    <main class="px-4 md:pr-4 pt-8 md:pt-10 pb-32 md:pb-36">
       <div class="flex flex-wrap items-end justify-between gap-4 mb-5 px-1">
         <div>
           <h1 id="title" class="text-3xl md:text-4xl font-extrabold tracking-tight">Discover</h1>
@@ -187,43 +60,12 @@
             <button data-d="cozy"    class="seg tap rounded-full w-10 h-9 text-sm" title="Cozy"    aria-label="Cozy grid"><i class="fa-solid fa-table-cells"></i></button>
             <button data-d="compact" class="seg tap rounded-full w-10 h-9 text-sm" title="Compact" aria-label="Compact grid"><i class="fa-solid fa-grip"></i></button>
           </div>
-          <button id="filterBtn" class="glass tap rounded-full px-5 h-11 text-sm font-semibold flex items-center gap-2" aria-expanded="false" aria-controls="filters">
+          <button id="filterBtn" class="glass tap rounded-full px-5 h-11 text-sm font-semibold flex items-center gap-2" aria-haspopup="dialog" aria-expanded="false">
             <i class="fa-solid fa-sliders"></i> Filters
             <span id="filterCount" class="hidden min-w-[20px] h-5 px-1 rounded-full bg-slate-900 text-white text-[11px] items-center justify-center">0</span>
           </button>
         </div>
       </div>
-
-      <!-- Filters panel -->
-      <section id="filters" class="hidden pop-in glass rounded-[28px] p-5 mb-6 grid gap-6 md:grid-cols-2 xl:grid-cols-4">
-        <div>
-          <p class="text-xs font-bold text-slate-500 mb-3">Type</p>
-          <div id="fType" class="flex flex-wrap gap-2"></div>
-        </div>
-        <div>
-          <p class="text-xs font-bold text-slate-500 mb-3">Orientation</p>
-          <div id="fOrient" class="flex flex-wrap gap-2"></div>
-        </div>
-        <div>
-          <p class="text-xs font-bold text-slate-500 mb-3">Minimum width</p>
-          <div id="fSize" class="flex flex-wrap gap-2"></div>
-        </div>
-        <div>
-          <p class="text-xs font-bold text-slate-500 mb-3">Curation</p>
-          <button id="fEditors" class="chip tap rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 text-slate-700">
-            <i class="fa-solid fa-award"></i> Editor’s choice only
-          </button>
-        </div>
-        <div class="md:col-span-2 xl:col-span-3">
-          <p class="text-xs font-bold text-slate-500 mb-3">Colour</p>
-          <div id="fColors" class="flex flex-wrap gap-2.5"></div>
-        </div>
-        <div class="flex items-end justify-end">
-          <button id="fReset" class="tap bg-slate-900 text-white rounded-full px-5 h-10 text-sm font-semibold flex items-center gap-2">
-            <i class="fa-solid fa-rotate-left"></i> Reset filters
-          </button>
-        </div>
-      </section>
 
       <section id="grid" data-d="cozy"></section>
 
@@ -234,577 +76,83 @@
     </main>
   </div>
 
-  <!-- Lightbox -->
-  <div id="lb" class="fixed inset-0 z-50 hidden items-center justify-center p-3 md:p-8 bg-slate-900/40 backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Photo preview">
-    <button id="lbPrev" class="glass tap absolute left-3 md:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full z-10" aria-label="Previous photo"><i class="fa-solid fa-chevron-left"></i></button>
-    <button id="lbNext" class="glass tap absolute right-3 md:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full z-10" aria-label="Next photo"><i class="fa-solid fa-chevron-right"></i></button>
+  <div id="sxBack" class="backdrop hidden z-[65] md:hidden"></div>
+  <div id="sbar">
+    <div class="sbcard">
+      <div class="sbhead">
+        <span>Search photos</span>
+        <button type="button" id="sbClose" class="w-9 h-9 rounded-full text-slate-500 tap" aria-label="Close search"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <form id="searchForm" role="search" class="glass rounded-full flex items-center gap-3 pl-5 pr-2 py-1.5">
+        <i class="fa-solid fa-magnifying-glass text-slate-400"></i>
+        <label class="flex-1 min-w-0">
+          <span class="sr-only">Search photos</span>
+          <input id="searchInput" type="text" autocomplete="off" placeholder="Search free photos"
+            class="w-full bg-transparent py-2.5 text-[15px] font-medium placeholder-slate-400 focus:outline-none">
+        </label>
+        <kbd class="hidden md:inline">/</kbd>
+        <button type="button" id="clearBtn" class="hidden w-9 h-9 rounded-full text-slate-400 hover:text-slate-900 tap" aria-label="Clear search"><i class="fa-solid fa-xmark"></i></button>
+        <button type="submit" class="tap bg-slate-900 text-white rounded-full px-5 h-11 text-sm font-semibold">Search</button>
+      </form>
+    </div>
+  </div>
 
-    <div class="glass rounded-[32px] w-full max-w-5xl max-h-full overflow-y-auto flex flex-col">
-      <div class="flex items-center justify-between gap-3 px-5 py-3">
-        <div class="flex items-center gap-3 min-w-0">
-          <img id="lbAvatar" src="" alt="" class="w-10 h-10 rounded-full object-cover bg-slate-200">
-          <div class="min-w-0">
-            <p id="lbUser" class="font-bold text-sm truncate"></p>
-            <p id="lbSize" class="text-xs text-slate-500"></p>
-          </div>
+  <div id="filters" class="hidden fixed inset-0 z-[70] items-end md:items-center justify-center md:p-4 bg-slate-900/35 backdrop-blur-md" role="dialog" aria-modal="true" aria-label="Filters">
+    <div class="fpanel pop-in glass w-full md:max-w-3xl h-[88vh] md:h-[580px] max-h-[92vh] flex flex-col rounded-t-[28px] md:rounded-[32px] overflow-hidden">
+
+      <div class="flex items-center justify-between px-6 pt-5 pb-3 shrink-0">
+        <div>
+          <h2 class="text-xl font-extrabold leading-tight">Filters</h2>
+          <p class="text-xs text-slate-500 font-semibold">Refine your results</p>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <button id="lbPlay" class="glass tap w-11 h-11 rounded-full" title="Slideshow (S)" aria-label="Toggle slideshow"><i class="fa-solid fa-play"></i></button>
-          <button id="lbLink" class="glass tap w-11 h-11 rounded-full" title="Copy link" aria-label="Copy link"><i class="fa-solid fa-link"></i></button>
-          <button id="lbFav" class="glass tap w-11 h-11 rounded-full" title="Favorite (F)" aria-label="Save to favorites"></button>
-          <button id="lbDl" class="tap bg-slate-900 text-white rounded-full px-5 h-11 text-sm font-semibold flex items-center gap-2"><i class="fa-solid fa-download"></i><span class="hidden sm:inline">Download</span></button>
-          <button id="lbClose" class="glass tap w-11 h-11 rounded-full" aria-label="Close preview"><i class="fa-solid fa-xmark"></i></button>
-        </div>
+        <button id="fClose" class="tap w-10 h-10 rounded-full text-slate-500 hover:text-slate-900" aria-label="Close filters"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
 
-      <div class="relative bg-slate-900/5 flex items-center justify-center overflow-hidden">
-        <img id="lbImg" src="" alt="" class="max-h-[56vh] w-auto max-w-full object-contain">
-        <span class="glass-photo absolute left-4 bottom-4 rounded-full px-3 py-1.5 text-[11px] font-semibold pointer-events-none"><i class="fa-solid fa-magnifying-glass-plus mr-1.5"></i>Click to zoom</span>
+      <div class="flex flex-col md:flex-row flex-1 min-h-0 border-t border-slate-300/40">
+        <nav id="fNav" class="flex md:flex-col gap-1.5 p-3 md:p-4 md:w-64 shrink-0 overflow-x-auto md:overflow-y-auto no-scrollbar border-b md:border-b-0 md:border-r border-slate-300/40" aria-label="Filter sections"></nav>
+        <div id="fPane" class="flex-1 min-w-0 overflow-y-auto p-5 md:p-8"></div>
       </div>
 
-      <div class="px-5 py-4 flex flex-wrap items-center justify-between gap-3">
-        <div id="lbTags" class="flex flex-wrap gap-2"></div>
-        <div class="flex items-center gap-5 text-sm font-semibold text-slate-600">
-          <span id="lbLikes"></span><span id="lbViews"></span><span id="lbDownloads"></span>
-        </div>
-      </div>
-
-      <div class="px-5 pb-5">
-        <p class="text-xs font-bold text-slate-500 mb-3">More like this</p>
-        <div id="lbRelated" class="flex gap-3 overflow-x-auto no-scrollbar"></div>
+      <div class="flex items-center justify-between gap-3 px-6 py-4 border-t border-slate-300/40 shrink-0">
+        <button id="fReset" class="tap text-sm font-bold text-slate-600 hover:text-slate-900 px-2 py-2 flex items-center gap-2"><i class="fa-solid fa-rotate-left"></i> Clear all</button>
+        <button id="fDone" class="tap bg-slate-900 text-white rounded-full px-7 h-12 text-sm font-bold">Show results</button>
       </div>
     </div>
   </div>
 
-  <div id="toast" class="hidden fixed z-[60] left-1/2 -translate-x-1/2 bottom-28 md:bottom-8 glass rounded-full px-5 py-3 text-sm font-semibold items-center gap-2"></div>
+  <div id="lb" class="fixed inset-0 z-50 hidden flex-col items-center justify-center bg-slate-950/70 backdrop-blur-xl" role="dialog" aria-modal="true" aria-label="Photo preview">
 
-<script>
-  const API_KEY = '30306838-b48cda5bf7da4b98cecbab85f';
-  const PER_PAGE = 24;
-  const TRENDING = ['ocean', 'mountains', 'city night', 'coffee', 'space', 'minimal', 'architecture', 'flowers', 'autumn', 'desert'];
+    <div class="absolute top-0 inset-x-0 z-10 flex items-center justify-between gap-3 p-3 md:p-5 pointer-events-none">
+      <div class="glass-photo pointer-events-auto rounded-full pl-1.5 pr-4 py-1.5 flex items-center gap-2.5 min-w-0 max-w-[72%]">
+        <img id="lbAvatar" src="" alt="" class="w-9 h-9 rounded-full object-cover bg-white/30 shrink-0">
+        <div class="min-w-0 leading-tight">
+          <p id="lbUser" class="text-sm font-bold truncate"></p>
+          <p id="lbSize" class="text-[11px] opacity-75"></p>
+        </div>
+      </div>
+      <button id="lbClose" class="glass-photo pointer-events-auto tap w-11 h-11 rounded-full shrink-0" aria-label="Close preview"><i class="fa-solid fa-xmark"></i></button>
+    </div>
 
-  const $ = id => document.getElementById(id);
-  const grid = $('grid'), tabs = $('tabs'), searchInput = $('searchInput'), clearBtn = $('clearBtn');
-  const title = $('title'), subtitle = $('subtitle'), spinner = $('spinner'), endMsg = $('end'), sentinel = $('sentinel');
-  const lb = $('lb');
+    <div id="lbStage" class="relative w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden px-3 pt-20 pb-28 md:px-24">
+      <img id="lbImg" src="" alt="" draggable="false" class="select-none rounded-3xl md:rounded-3xl shadow-2xl" style="max-width:100%;max-height:100%;object-fit:contain">
+    </div>
 
-  const categories = [
-    { name: 'Featured',    value: '',               icon: 'fa-star' },
-    { name: 'Nature',      value: 'nature',         icon: 'fa-leaf' },
-    { name: 'Backgrounds', value: 'backgrounds',    icon: 'fa-layer-group' },
-    { name: 'Places',      value: 'places',         icon: 'fa-location-dot' },
-    { name: 'Animals',     value: 'animals',        icon: 'fa-paw' },
-    { name: 'Technology',  value: 'computer',       icon: 'fa-microchip' },
-    { name: 'Food',        value: 'food',           icon: 'fa-utensils' },
-    { name: 'Buildings',   value: 'buildings',      icon: 'fa-building' },
-    { name: 'Transport',   value: 'transportation', icon: 'fa-car-side' },
-    { name: 'Fashion',     value: 'fashion',        icon: 'fa-shirt' },
-    { name: 'Science',     value: 'science',        icon: 'fa-flask' },
-    { name: 'Education',   value: 'education',      icon: 'fa-graduation-cap' },
-    { name: 'Sports',      value: 'sports',         icon: 'fa-futbol' }
-  ];
+    <button id="lbPrev" class="glass-photo tap absolute left-2 md:left-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full z-10" aria-label="Previous photo"><i class="fa-solid fa-chevron-left"></i></button>
+    <button id="lbNext" class="glass-photo tap absolute right-2 md:right-8 top-1/2 -translate-y-1/2 w-11 h-11 md:w-12 md:h-12 rounded-full z-10" aria-label="Next photo"><i class="fa-solid fa-chevron-right"></i></button>
 
-  const TYPES = [
-    { label: 'Photos', value: 'photo', icon: 'fa-camera' },
-    { label: 'Illustrations', value: 'illustration', icon: 'fa-palette' },
-    { label: 'Vectors', value: 'vector', icon: 'fa-bezier-curve' },
-    { label: 'All', value: 'all', icon: 'fa-border-all' }
-  ];
-  const ORIENTS = [
-    { label: 'Any', value: '', icon: 'fa-border-all' },
-    { label: 'Landscape', value: 'horizontal', icon: 'fa-panorama' },
-    { label: 'Portrait', value: 'vertical', icon: 'fa-mobile-screen' }
-  ];
-  const SIZES = [
-    { label: 'Any', value: 0 },
-    { label: '1280 px', value: 1280 },
-    { label: '1920 px', value: 1920 },
-    { label: '3840 px', value: 3840 }
-  ];
-  const COLORS = {
-    grayscale:   'linear-gradient(135deg,#fff 0%,#000 100%)',
-    transparent: 'conic-gradient(#d4d4d8 25%,#fff 0 50%,#d4d4d8 0 75%,#fff 0) 0 0/10px 10px',
-    red: '#ef4444', orange: '#f97316', yellow: '#facc15', green: '#22c55e', turquoise: '#14b8a6',
-    blue: '#3b82f6', lilac: '#a78bfa', pink: '#ec4899', white: '#ffffff', gray: '#9ca3af', black: '#0f172a', brown: '#92400e'
-  };
+    <div class="absolute bottom-4 md:bottom-6 inset-x-0 z-10 flex justify-center px-3 pointer-events-none">
+      <div class="glass-photo pointer-events-auto rounded-full p-1.5 flex items-center gap-1.5">
+        <button id="lbPlay" class="tap w-11 h-11 rounded-full hover:bg-white/20" title="Slideshow (S)" aria-label="Toggle slideshow"><i class="fa-solid fa-play"></i></button>
+        <button id="lbLink" class="tap w-11 h-11 rounded-full hover:bg-white/20" title="Copy link" aria-label="Copy link"><i class="fa-solid fa-link"></i></button>
+        <button id="lbFav" class="tap w-11 h-11 rounded-full hover:bg-white/20" title="Favorite (F)" aria-label="Save to favorites"></button>
+        <button id="lbDl" class="tap bg-white text-slate-900 rounded-full px-5 h-11 text-sm font-bold flex items-center gap-2"><i class="fa-solid fa-download"></i> Download</button>
+      </div>
+    </div>
+  </div>
 
-  const state = {
-    query: '', category: '', order: 'popular', page: 1,
-    imageType: 'photo', orientation: '', minWidth: 0, editors: false, colors: new Set(),
-    loading: false, done: false, view: 'explore', token: 0, total: 0
-  };
-  let items = [];
+  <div id="toast" class="hidden fixed z-[90] left-1/2 -translate-x-1/2 bottom-24 md:bottom-24 glass rounded-full px-5 py-3 text-sm font-semibold items-center gap-2"></div>
 
-  const nf = new Intl.NumberFormat('en-US', { notation: 'compact' });
-  const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const store = {
-    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
-  };
 
-  /* ---------- API with in-memory cache ---------- */
-  const cache = new Map();
-  async function api(url) {
-    if (cache.has(url)) return cache.get(url);
-    const res = await fetch(url);
-    if (!res.ok) throw new Error(`Request failed (${res.status})`);
-    const data = await res.json();
-    cache.set(url, data);
-    return data;
-  }
-
-  /* ---------- Favorites ---------- */
-  const favs = new Map();
-  store.get('lumen_favs', []).forEach(p => favs.set(p.id, p));
-  const heart = on => `<i class="${on ? 'fa-solid text-rose-500' : 'fa-regular'} fa-heart"></i>`;
-
-  const slim = p => ({
-    id: p.id, tags: p.tags, user: p.user, userImageURL: p.userImageURL, pageURL: p.pageURL,
-    webformatURL: p.webformatURL, webformatWidth: p.webformatWidth, webformatHeight: p.webformatHeight,
-    previewURL: p.previewURL, largeImageURL: p.largeImageURL, imageWidth: p.imageWidth, imageHeight: p.imageHeight,
-    likes: p.likes, views: p.views, downloads: p.downloads
-  });
-
-  function toggleFav(p) {
-    if (favs.has(p.id)) { favs.delete(p.id); toast('<i class="fa-regular fa-heart"></i> Removed from favorites'); }
-    else { favs.set(p.id, slim(p)); toast('<i class="fa-solid fa-heart text-rose-500"></i> Saved to favorites'); }
-    store.set('lumen_favs', [...favs.values()]);
-    syncFavUI();
-    if (state.view === 'favorites') showFavorites();
-  }
-
-  function syncFavUI() {
-    const n = favs.size, b = $('favBadge');
-    b.textContent = n; b.classList.toggle('hidden', n === 0); b.classList.toggle('flex', n > 0);
-    document.querySelectorAll('[data-fav]').forEach(btn => { btn.innerHTML = heart(favs.has(+btn.dataset.fav)); });
-    const cur = lbCurrent();
-    if (cur) $('lbFav').innerHTML = heart(favs.has(cur.id));
-  }
-
-  /* ---------- Toast ---------- */
-  let toastTimer;
-  function toast(html) {
-    const t = $('toast');
-    t.innerHTML = html; t.classList.remove('hidden'); t.classList.add('flex', 'toast-in');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => { t.classList.add('hidden'); t.classList.remove('flex', 'toast-in'); }, 1900);
-  }
-
-  /* ---------- Tabs / rail ---------- */
-  function renderTabs() {
-    tabs.innerHTML = '';
-    categories.forEach(cat => {
-      const b = document.createElement('button');
-      const active = state.view === 'explore' && !state.query && cat.value === state.category;
-      b.className = 'tab tap whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-semibold flex items-center gap-2' + (active ? ' active' : '');
-      b.innerHTML = `<i class="fa-solid ${cat.icon} text-xs"></i>${cat.name}`;
-      b.onclick = () => { setQuery(''); setExplore({ query: '', category: cat.value }); };
-      tabs.appendChild(b);
-    });
-  }
-
-  function renderRail() {
-    document.querySelectorAll('[data-nav]').forEach(b => {
-      const n = b.dataset.nav;
-      const on = (n === 'favorites' && state.view === 'favorites') ||
-                 (n === 'explore' && state.view === 'explore' && state.order === 'popular') ||
-                 (n === 'latest' && state.view === 'explore' && state.order === 'latest');
-      b.classList.toggle('active', on);
-    });
-  }
-
-  function setQuery(q) { searchInput.value = q; clearBtn.classList.toggle('hidden', !q); }
-
-  function setExplore(patch) {
-    Object.assign(state, patch, { view: 'explore' });
-    const cat = categories.find(c => c.value === state.category);
-    title.textContent = state.query ? `Results for “${state.query}”` : (state.category ? cat.name : 'Discover');
-    $('filterBtn').classList.remove('hidden');
-    $('filterBtn').classList.add('flex');
-    renderTabs(); renderRail(); renderFilters();
-    load(true);
-  }
-
-  function showFavorites() {
-    state.view = 'favorites'; state.token++; state.loading = false;
-    items = [...favs.values()];
-    grid.innerHTML = ''; endMsg.classList.add('hidden'); setSpinner(false);
-    title.textContent = 'Favorites';
-    subtitle.textContent = items.length ? `${items.length} saved photo${items.length === 1 ? '' : 's'}` : '\u00A0';
-    renderTabs(); renderRail();
-    if (!items.length) {
-      grid.insertAdjacentHTML('beforeend', message('fa-heart', 'No favorites yet', 'Tap the heart on any photo to save it here.'));
-      return;
-    }
-    appendCards(items, 0);
-  }
-
-  document.querySelectorAll('[data-nav]').forEach(b => b.onclick = () => {
-    const n = b.dataset.nav;
-    if (n === 'favorites') return showFavorites();
-    if (n === 'surprise') {
-      const q = TRENDING[Math.floor(Math.random() * TRENDING.length)];
-      setQuery(q); setExplore({ query: q, category: '', order: 'popular' });
-      return window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    setQuery('');
-    setExplore({ order: n === 'latest' ? 'latest' : 'popular', query: '', category: '' });
-  });
-  $('toTop').onclick = () => window.scrollTo({ top: 0, behavior: 'smooth' });
-
-  /* ---------- Density ---------- */
-  function setDensity(d) {
-    grid.dataset.d = d; store.set('lumen_density', d);
-    document.querySelectorAll('#density .seg').forEach(b => b.classList.toggle('active', b.dataset.d === d));
-  }
-  document.querySelectorAll('#density .seg').forEach(b => b.onclick = () => setDensity(b.dataset.d));
-  setDensity(store.get('lumen_density', 'cozy'));
-
-  /* ---------- Filters ---------- */
-  const segBtn = (o, on) => `<button data-v="${o.value}" class="chip tap rounded-full px-4 py-2 text-xs font-semibold flex items-center gap-2 text-slate-700 ${on ? '!bg-slate-900 !text-white' : ''}">${o.icon ? `<i class="fa-solid ${o.icon}"></i>` : ''}${o.label}</button>`;
-
-  function renderFilters() {
-    $('fType').innerHTML = TYPES.map(o => segBtn(o, state.imageType === o.value)).join('');
-    $('fOrient').innerHTML = ORIENTS.map(o => segBtn(o, state.orientation === o.value)).join('');
-    $('fSize').innerHTML = SIZES.map(o => segBtn(o, state.minWidth === o.value)).join('');
-    $('fColors').innerHTML = Object.entries(COLORS).map(([name, bg]) =>
-      `<button data-c="${name}" title="${name}" aria-label="${name}" class="sw ${state.colors.has(name) ? 'sel' : ''}" style="background:${bg}"></button>`).join('');
-    const ed = $('fEditors');
-    ed.classList.toggle('!bg-slate-900', state.editors); ed.classList.toggle('!text-white', state.editors);
-
-    const n = (state.imageType !== 'photo') + !!state.orientation + !!state.minWidth + state.editors + state.colors.size;
-    const c = $('filterCount');
-    c.textContent = n; c.classList.toggle('hidden', n === 0); c.classList.toggle('flex', n > 0);
-  }
-
-  $('fType').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) setExplore({ imageType: b.dataset.v }); });
-  $('fOrient').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) setExplore({ orientation: b.dataset.v }); });
-  $('fSize').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) setExplore({ minWidth: +b.dataset.v }); });
-  $('fColors').addEventListener('click', e => {
-    const b = e.target.closest('[data-c]'); if (!b) return;
-    const c = b.dataset.c;
-    state.colors.has(c) ? state.colors.delete(c) : state.colors.add(c);
-    setExplore({});
-  });
-  $('fEditors').onclick = () => setExplore({ editors: !state.editors });
-  $('fReset').onclick = () => { state.colors.clear(); setExplore({ imageType: 'photo', orientation: '', minWidth: 0, editors: false }); };
-
-  $('filterBtn').onclick = () => {
-    const p = $('filters'), open = p.classList.contains('hidden');
-    p.classList.toggle('hidden', !open);
-    $('filterBtn').setAttribute('aria-expanded', open);
-  };
-
-  /* ---------- Search + recents ---------- */
-  function addRecent(q) {
-    const r = store.get('lumen_recent', []).filter(x => x.toLowerCase() !== q.toLowerCase());
-    r.unshift(q); store.set('lumen_recent', r.slice(0, 6));
-  }
-
-  function renderSuggest() {
-    const box = $('suggest');
-    const typed = searchInput.value.trim().toLowerCase();
-    const recent = store.get('lumen_recent', []).filter(r => !typed || r.toLowerCase().includes(typed));
-    const trending = TRENDING.filter(t => !typed || t.includes(typed)).slice(0, 8);
-    if (!recent.length && !trending.length) { box.classList.add('hidden'); return; }
-    box.innerHTML = `
-      ${recent.length ? `<p class="text-xs font-bold text-slate-500 mb-2">Recent</p>
-        <div class="mb-4 space-y-1">${recent.map(r => `
-          <div class="flex items-center justify-between rounded-2xl hover:bg-white/80 px-3 py-2 cursor-pointer" data-pick="${esc(r)}">
-            <span class="text-sm font-semibold flex items-center gap-3"><i class="fa-solid fa-clock-rotate-left text-slate-400"></i>${esc(r)}</span>
-            <button data-del="${esc(r)}" class="text-slate-400 hover:text-slate-900 w-7 h-7" aria-label="Remove ${esc(r)}"><i class="fa-solid fa-xmark"></i></button>
-          </div>`).join('')}</div>` : ''}
-      ${trending.length ? `<p class="text-xs font-bold text-slate-500 mb-2">Trending</p>
-        <div class="flex flex-wrap gap-2">${trending.map(t => `
-          <button data-pick="${esc(t)}" class="chip tap rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-arrow-trend-up text-slate-400"></i>${esc(t)}</button>`).join('')}</div>` : ''}`;
-    box.classList.remove('hidden');
-  }
-
-  function runSearch(q) {
-    q = q.trim();
-    setQuery(q);
-    if (q) addRecent(q);
-    $('suggest').classList.add('hidden');
-    searchInput.blur();
-    setExplore({ query: q, category: '' });
-  }
-
-  $('searchForm').addEventListener('submit', e => { e.preventDefault(); runSearch(searchInput.value); });
-  searchInput.addEventListener('focus', renderSuggest);
-  searchInput.addEventListener('input', () => { clearBtn.classList.toggle('hidden', !searchInput.value); renderSuggest(); });
-  searchInput.addEventListener('blur', () => setTimeout(() => $('suggest').classList.add('hidden'), 120));
-  clearBtn.onclick = () => { setQuery(''); searchInput.focus(); };
-  $('suggest').addEventListener('click', e => {
-    const del = e.target.closest('[data-del]');
-    if (del) {
-      e.stopPropagation();
-      store.set('lumen_recent', store.get('lumen_recent', []).filter(x => x !== del.dataset.del));
-      return renderSuggest();
-    }
-    const pick = e.target.closest('[data-pick]');
-    if (pick) runSearch(pick.dataset.pick);
-  });
-
-  /* ---------- Loading ---------- */
-  function buildUrl(extra = '') {
-    let u = `https://pixabay.com/api/?key=${API_KEY}&safesearch=true&per_page=${PER_PAGE}&page=${state.page}&order=${state.order}&image_type=${state.imageType}`;
-    if (state.query) u += `&q=${encodeURIComponent(state.query)}`;
-    if (state.category) u += `&category=${state.category}`;
-    if (state.orientation) u += `&orientation=${state.orientation}`;
-    if (state.minWidth) u += `&min_width=${state.minWidth}`;
-    if (state.editors) u += `&editors_choice=true`;
-    if (state.colors.size) u += `&colors=${[...state.colors].join(',')}`;
-    return u + extra;
-  }
-
-  function showSkeletons(n) {
-    const hs = [260, 340, 220, 400, 300, 360, 240, 320];
-    for (let i = 0; i < n; i++) {
-      const d = document.createElement('div');
-      d.className = 'sk shimmer mb-5 break-inside-avoid rounded-3xl';
-      d.style.height = hs[i % hs.length] + 'px';
-      grid.appendChild(d);
-    }
-  }
-  const clearSkeletons = () => grid.querySelectorAll('.sk').forEach(el => el.remove());
-  const setSpinner = on => { spinner.classList.toggle('hidden', !on); spinner.classList.toggle('flex', on); };
-
-  async function load(reset) {
-    if (state.view !== 'explore') return;
-    if (reset) {
-      state.token++; state.page = 1; state.done = false; state.loading = false; state.total = 0;
-      items = []; grid.innerHTML = ''; subtitle.innerHTML = '&nbsp;'; endMsg.classList.add('hidden');
-    }
-    if (state.loading || state.done) return;
-    state.loading = true;
-    const token = state.token;
-    if (reset) showSkeletons(8); else setSpinner(true);
-
-    try {
-      const data = await api(buildUrl());
-      if (token !== state.token) return;
-      clearSkeletons();
-
-      if (!data.hits || !data.hits.length) {
-        state.done = true;
-        if (!items.length) grid.innerHTML = message('fa-image', 'No photos found', 'Try a different keyword, or reset your filters.');
-        else endMsg.classList.remove('hidden');
-        return;
-      }
-      state.total = data.totalHits;
-      const start = items.length;
-      items = items.concat(data.hits);
-      appendCards(data.hits, start);
-      subtitle.textContent = `${nf.format(state.total)} free ${state.imageType === 'all' ? 'images' : state.imageType + 's'}`;
-      state.page++;
-      if (items.length >= state.total) { state.done = true; endMsg.classList.remove('hidden'); }
-    } catch (err) {
-      if (token !== state.token) return;
-      console.error(err);
-      clearSkeletons();
-      if (!items.length) grid.innerHTML = message('fa-triangle-exclamation', 'Couldn’t load photos', 'Check your connection, then search again.');
-    } finally {
-      if (token === state.token) {
-        state.loading = false; setSpinner(false);
-        io.unobserve(sentinel); io.observe(sentinel);   // keep filling if sentinel is still visible
-      }
-    }
-  }
-
-  function message(icon, head, text) {
-    return `<div class="glass rounded-[32px] py-20 px-6 text-center" style="column-span:all">
-      <div class="w-14 h-14 mx-auto mb-4 rounded-2xl bg-white/80 flex items-center justify-center"><i class="fa-solid ${icon} text-xl text-slate-500"></i></div>
-      <p class="text-lg font-bold">${head}</p><p class="text-sm text-slate-500 mt-1">${text}</p></div>`;
-  }
-
-  /* ---------- Cards ---------- */
-  function appendCards(list, offset) {
-    const frag = document.createDocumentFragment();
-    list.forEach((p, i) => {
-      const card = document.createElement('figure');
-      card.className = 'card relative mb-5 break-inside-avoid rounded-3xl overflow-hidden bg-slate-200';
-      card.style.aspectRatio = `${p.webformatWidth} / ${p.webformatHeight}`;
-      card.dataset.idx = offset + i;
-      card.tabIndex = 0;
-      card.innerHTML = `
-        <img class="main absolute inset-0 w-full h-full object-cover" src="${p.webformatURL}" alt="${esc(p.tags)}" loading="lazy">
-        <div class="scrim absolute inset-0 pointer-events-none"></div>
-        <button data-fav="${p.id}" class="chrome glass-photo tap absolute top-3 right-3 w-10 h-10 rounded-full" aria-label="Save to favorites">${heart(favs.has(p.id))}</button>
-        <div class="chrome absolute left-3 right-3 bottom-3 flex items-center justify-between gap-2">
-          <div class="glass-photo rounded-full pl-1.5 pr-4 py-1.5 flex items-center gap-2 min-w-0">
-            <img src="${p.userImageURL || ''}" alt="" class="w-7 h-7 rounded-full object-cover bg-white/40" style="opacity:1" onerror="this.style.display='none'">
-            <span class="text-xs font-semibold truncate">${esc(p.user)}</span>
-          </div>
-          <button data-dl="${p.id}" class="glass-photo tap w-10 h-10 rounded-full flex items-center justify-center shrink-0" aria-label="Download photo"><i class="fa-solid fa-download"></i></button>
-        </div>`;
-      const img = card.querySelector('img.main');
-      img.addEventListener('load', () => img.classList.add('loaded'));
-      if (img.complete) img.classList.add('loaded');
-      frag.appendChild(card);
-    });
-    grid.appendChild(frag);
-  }
-
-  grid.addEventListener('click', e => {
-    const f = e.target.closest('[data-fav]');
-    if (f) { const p = items.find(x => x.id === +f.dataset.fav); if (p) toggleFav(p); return; }
-    const d = e.target.closest('[data-dl]');
-    if (d) { const p = items.find(x => x.id === +d.dataset.dl); if (p) downloadPhoto(p); return; }
-    const c = e.target.closest('.card');
-    if (c) openLb(+c.dataset.idx, 'grid');
-  });
-  grid.addEventListener('keydown', e => {
-    if (e.key === 'Enter' && e.target.classList.contains('card')) openLb(+e.target.dataset.idx, 'grid');
-  });
-
-  /* ---------- Real download ---------- */
-  async function downloadPhoto(p) {
-    toast('<i class="fa-solid fa-circle-notch fa-spin"></i> Preparing download');
-    try {
-      const res = await fetch(p.largeImageURL);
-      if (!res.ok) throw new Error('bad response');
-      const blob = await res.blob();
-      const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = `lumen-${p.id}.jpg`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-      toast('<i class="fa-solid fa-circle-check text-emerald-500"></i> Download started');
-    } catch (e) {
-      window.open(p.largeImageURL, '_blank', 'noopener');
-      toast('<i class="fa-solid fa-arrow-up-right-from-square"></i> Opened in a new tab');
-    }
-  }
-
-  /* ---------- Infinite scroll ---------- */
-  const io = new IntersectionObserver(entries => {
-    if (entries.some(en => en.isIntersecting)) load(false);
-  }, { rootMargin: '600px 0px' });
-  io.observe(sentinel);
-
-  /* ---------- Lightbox ---------- */
-  let lbMode = 'grid', lbIndex = -1, relList = [], strip = [], slideTimer = null;
-  const lbList = () => lbMode === 'grid' ? items : relList;
-  const lbCurrent = () => lbIndex >= 0 ? lbList()[lbIndex] : null;
-
-  function openLb(i, mode, list) {
-    if (mode === 'related') relList = list;
-    lbMode = mode;
-    const L = lbList();
-    if (i < 0 || i >= L.length) return;
-    lbIndex = i;
-    const p = L[i];
-
-    const img = $('lbImg');
-    img.classList.remove('zoomed'); img.style.transformOrigin = '50% 50%';
-    img.src = p.largeImageURL; img.alt = p.tags;
-    $('lbAvatar').src = p.userImageURL || ''; $('lbAvatar').style.visibility = p.userImageURL ? 'visible' : 'hidden';
-    $('lbUser').textContent = p.user;
-    $('lbSize').textContent = p.imageWidth ? `${p.imageWidth} × ${p.imageHeight} px` : '';
-    $('lbLikes').innerHTML = `<i class="fa-solid fa-heart text-rose-400 mr-1.5"></i>${nf.format(p.likes)}`;
-    $('lbViews').innerHTML = `<i class="fa-solid fa-eye text-sky-500 mr-1.5"></i>${nf.format(p.views)}`;
-    $('lbDownloads').innerHTML = `<i class="fa-solid fa-download text-slate-400 mr-1.5"></i>${nf.format(p.downloads || 0)}`;
-    $('lbTags').innerHTML = p.tags.split(',').map(t => t.trim()).filter(Boolean)
-      .map(t => `<button data-tag="${esc(t)}" class="chip tap rounded-full px-3.5 py-1.5 text-xs font-semibold text-slate-700">${esc(t)}</button>`).join('');
-    $('lbFav').innerHTML = heart(favs.has(p.id));
-    $('lbPrev').style.visibility = i > 0 ? 'visible' : 'hidden';
-    $('lbNext').style.visibility = i < L.length - 1 ? 'visible' : 'hidden';
-    lb.classList.remove('hidden'); lb.classList.add('flex');
-    document.body.style.overflow = 'hidden';
-    if (mode === 'grid' && state.view === 'explore' && i >= L.length - 4) load(false);
-    loadRelated(p);
-  }
-
-  function closeLb() {
-    stopSlides();
-    lb.classList.add('hidden'); lb.classList.remove('flex');
-    document.body.style.overflow = ''; lbIndex = -1;
-  }
-
-  async function loadRelated(p) {
-    const box = $('lbRelated');
-    const tag = p.tags.split(',')[0].trim();
-    box.innerHTML = Array.from({ length: 6 }, () => '<div class="shimmer w-36 h-24 rounded-2xl shrink-0"></div>').join('');
-    try {
-      const data = await api(`https://pixabay.com/api/?key=${API_KEY}&safesearch=true&image_type=photo&per_page=12&q=${encodeURIComponent(tag)}`);
-      if (lbCurrent()?.id !== p.id) return;
-      strip = (data.hits || []).filter(h => h.id !== p.id);
-      box.innerHTML = strip.length
-        ? strip.map((h, j) => `<button data-rel="${j}" class="tap shrink-0 rounded-2xl overflow-hidden bg-slate-200 w-36 h-24" aria-label="Open related photo"><img src="${h.previewURL}" alt="${esc(h.tags)}" class="w-full h-full object-cover"></button>`).join('')
-        : '<p class="text-sm text-slate-500">No similar photos found.</p>';
-    } catch (e) {
-      box.innerHTML = '<p class="text-sm text-slate-500">Couldn’t load similar photos.</p>';
-    }
-  }
-
-  $('lbRelated').addEventListener('click', e => {
-    const b = e.target.closest('[data-rel]');
-    if (!b) return;
-    stopSlides();
-    const list = strip.slice();
-    openLb(+b.dataset.rel, 'related', list);
-  });
-
-  /* Slideshow */
-  function stopSlides() {
-    clearInterval(slideTimer); slideTimer = null;
-    $('lbPlay').innerHTML = '<i class="fa-solid fa-play"></i>';
-  }
-  function toggleSlides() {
-    if (slideTimer) return stopSlides();
-    $('lbPlay').innerHTML = '<i class="fa-solid fa-pause"></i>';
-    slideTimer = setInterval(() => {
-      if (lbIndex < lbList().length - 1) openLb(lbIndex + 1, lbMode);
-      else stopSlides();
-    }, 3500);
-  }
-
-  /* Zoom */
-  $('lbImg').addEventListener('click', e => {
-    const img = e.currentTarget, r = img.getBoundingClientRect();
-    img.style.transformOrigin = `${((e.clientX - r.left) / r.width) * 100}% ${((e.clientY - r.top) / r.height) * 100}%`;
-    img.classList.toggle('zoomed');
-  });
-
-  $('lbClose').onclick = closeLb;
-  $('lbPrev').onclick = () => { stopSlides(); openLb(lbIndex - 1, lbMode); };
-  $('lbNext').onclick = () => { stopSlides(); openLb(lbIndex + 1, lbMode); };
-  $('lbPlay').onclick = toggleSlides;
-  $('lbFav').onclick = () => { const p = lbCurrent(); if (p) toggleFav(p); };
-  $('lbDl').onclick = () => { const p = lbCurrent(); if (p) downloadPhoto(p); };
-  $('lbLink').onclick = () => {
-    const p = lbCurrent(); if (!p) return;
-    const link = p.pageURL || p.largeImageURL;
-    (navigator.clipboard ? navigator.clipboard.writeText(link) : Promise.reject())
-      .then(() => toast('<i class="fa-solid fa-circle-check text-emerald-500"></i> Link copied'))
-      .catch(() => toast('<i class="fa-solid fa-triangle-exclamation"></i> Couldn’t copy the link'));
-  };
-  lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
-  $('lbTags').addEventListener('click', e => {
-    const t = e.target.closest('[data-tag]');
-    if (!t) return;
-    closeLb();
-    setQuery(t.dataset.tag); addRecent(t.dataset.tag);
-    setExplore({ query: t.dataset.tag, category: '' });
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  });
-
-  /* ---------- Keyboard ---------- */
-  document.addEventListener('keydown', e => {
-    const typing = /input|textarea/i.test(document.activeElement.tagName);
-    if (e.key === '/' && !typing && lbIndex < 0) { e.preventDefault(); searchInput.focus(); return; }
-    if (e.key === 'Escape' && typing) { searchInput.blur(); return; }
-    if (lbIndex < 0 || typing) return;
-    if (e.key === 'Escape') closeLb();
-    if (e.key === 'ArrowLeft')  { stopSlides(); openLb(lbIndex - 1, lbMode); }
-    if (e.key === 'ArrowRight') { stopSlides(); openLb(lbIndex + 1, lbMode); }
-    if (e.key.toLowerCase() === 'f') { const p = lbCurrent(); if (p) toggleFav(p); }
-    if (e.key.toLowerCase() === 's') toggleSlides();
-  });
-
-  /* ---------- Init ---------- */
-  syncFavUI();
-  setExplore({ query: '', category: '' });
-</script>
+  <script src="./assets/script/app.js"></script>
 </body>
 </html>
